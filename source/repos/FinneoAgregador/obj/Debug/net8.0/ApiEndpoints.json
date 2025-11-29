@@ -1,0 +1,18 @@
+[
+  {
+    "ContainingType": "CryptoController",
+    "Method": "ObterTokens",
+    "RelativePath": "api/Crypto/{enderecoCarteira}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "enderecoCarteira",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
