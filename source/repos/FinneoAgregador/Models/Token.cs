@@ -10,4 +10,5 @@
     public decimal Mudanca24hPercent { get; set; }
     public decimal Mudanca24hUsd { get; set; }
     public decimal Mudanca24hBr { get; set; } // Novo
+    public string Rede { get; set; }
 }
