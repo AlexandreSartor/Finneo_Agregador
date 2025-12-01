@@ -10,7 +10,7 @@ using FinneoAgregador.Models;
 public class CryptoService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _moralisApiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImIzOWI2YTgxLTAyZTQtNGJlZC1iYzQzLWIyN2EzMjk3NzAzMCIsIm9yZ0lkIjoiNDgzMjEyIiwidXNlcklkIjoiNDk3MTM1IiwidHlwZUlkIjoiOGMxYzBlMzUtNWEyOC00MmM1LTgzZmYtZDczMThlYmM5N2ZiIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NjQxMDUyMzIsImV4cCI6NDkxOTg2NTIzMn0.kzdbGSqQJk-Jv4AnaS4yNMSk5KkgcOEzditJVrrbxMo";
+    private readonly string _moralisApiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImJhYThiYTA1LTg5MjQtNGVkNi05MDFjLTQxNDQ0Njg3MDExZCIsIm9yZ0lkIjoiNDgzMjEzIiwidXNlcklkIjoiNDk3MTM2IiwidHlwZUlkIjoiMDFjODE0M2QtZTNiYS00ZTZjLTk2ZjgtZmNkZDUwYjJmYTQ3IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NjQxMDU2NDcsImV4cCI6NDkxOTg2NTY0N30.CpU_9JGUiRxUKd5BgWF8FJq5FXs98IfX3bWc-tFcCxA";
     public CryptoService(HttpClient httpClient)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -21,6 +21,19 @@ public class CryptoService
             _httpClient.DefaultRequestHeaders.Add("X-API-Key", _moralisApiKey);
         }
     }
+
+    private string _carteiraUsuario;
+
+    public void DefinirCarteira(string carteira)
+    {
+        _carteiraUsuario = carteira;
+    }
+
+    public string ObterCarteiraDoUsuario()
+    {
+        return _carteiraUsuario;
+    }
+
 
     private async Task<decimal> ObterCotacaoDolarParaReal()
     {
@@ -42,11 +55,10 @@ public class CryptoService
     public async Task<List<TokenMoralis>> ObterTokensMoralis(string enderecoCarteira)
     {
         string[] redes = new string[]
-                {
-                    "eth","arbitrum","avalanche","optimism","polygon",
+        {
+        "eth","arbitrum","avalanche","optimism","polygon",
 
-
-                 };
+        };
 
         decimal cotacao = await ObterCotacaoDolarParaReal();
         var resultado = new List<TokenMoralis>();
@@ -72,32 +84,51 @@ public class CryptoService
 
                 if (precoUsd == 0) continue;
 
-                decimal SaldoFormatado = balance / (decimal)Math.Pow(10, decimals);
-
-
+                decimal saldoFormatado = balance / (decimal)Math.Pow(10, decimals);
 
                 decimal Truncar4(decimal valor) => Math.Floor(valor * 10000) / 10000;
 
                 resultado.Add(new TokenMoralis
                 {
                     Simbolo = token.GetProperty("symbol").GetString(),
-                    Saldo = Truncar4(SaldoFormatado),
+                    Saldo = Truncar4(saldoFormatado),
                     PrecoUsd = Truncar4(precoUsd),
                     PrecoBr = Truncar4(precoUsd * cotacao),
-                    ValorTotalUsd = Truncar4(SaldoFormatado * precoUsd),
-                    ValorTotalBr = Truncar4(SaldoFormatado * precoUsd * cotacao),
+                    ValorTotalUsd = Truncar4(saldoFormatado * precoUsd),
+                    ValorTotalBr = Truncar4(saldoFormatado * precoUsd * cotacao),
                     PercentualPortfolio = Truncar4(token.GetProperty("portfolio_percentage").GetDecimal()),
                     Mudanca24hPercent = Truncar4(token.GetProperty("usd_price_24hr_percent_change").GetDecimal()),
                     Mudanca24hUsd = Truncar4(token.GetProperty("usd_price_24hr_usd_change").GetDecimal()),
                     Mudanca24hBr = Truncar4(token.GetProperty("usd_price_24hr_usd_change").GetDecimal() * cotacao),
                     Rede = rede
-
                 });
+            }
+        }
+
+        // ---------- Calcula total por símbolo ----------
+        var totalPorSimbolo = resultado
+            .GroupBy(t => t.Simbolo)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    ValorTotalUsd = g.Sum(t => t.ValorTotalUsd),
+                    ValorTotalBr = g.Sum(t => t.ValorTotalBr)
+                });
+
+        // ---------- Preenche os campos TotalPorSimbolo ----------
+        foreach (var token in resultado)
+        {
+            if (totalPorSimbolo.TryGetValue(token.Simbolo, out var tot))
+            {
+
+                token.ValoremCarteira = tot.ValorTotalBr;
             }
         }
 
         return resultado;
     }
+
 
     public async Task<decimal> ObterTotalCarteiraBr(string enderecoCarteira)
     {

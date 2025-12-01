@@ -11,21 +11,27 @@ public class CryptoController : ControllerBase
         _cryptoService = cryptoService;
     }
 
-    [HttpGet("{enderecoCarteira}")]
-    public async Task<IActionResult> ObterTokens(string enderecoCarteira)
+    [HttpGet()]
+    public async Task<IActionResult> ObterTokens()
     {
+
+        var enderecoCarteira = _cryptoService.ObterCarteiraDoUsuario(); // OK
+
+        if (string.IsNullOrWhiteSpace(enderecoCarteira))
+
+            return BadRequest("Endereço da carteira não definido. Use o POST para definir.");
         var tokens = await _cryptoService.ObterTokensMoralis(enderecoCarteira);
         return Ok(tokens);
     }
 
-  
 
-    // GET api/crypto/total/{enderecoCarteira}
-    [HttpGet("total/{enderecoCarteira}")]
-    public async Task<IActionResult> ObterTotalCarteira(string enderecoCarteira)
+
+    [HttpGet("total")]
+    public async Task<IActionResult> ObterTotalCarteira()
     {
-        if (string.IsNullOrEmpty(enderecoCarteira))
-            return BadRequest("Endereço da carteira é obrigatório.");
+        var enderecoCarteira = _cryptoService.ObterCarteiraDoUsuario(); // OK
+        if (string.IsNullOrWhiteSpace(enderecoCarteira))
+            return BadRequest("Endereço da carteira não definido. Use o POST para definir.");
 
         try
         {
@@ -39,12 +45,15 @@ public class CryptoController : ControllerBase
     }
 
 
-    // GET: api/crypto/Resumo?enderecoCarteira=0x...
+
+
     [HttpGet("Resumo")]
-    public async Task<IActionResult> ObterResumoCarteira([FromQuery] string enderecoCarteira)
+    public async Task<IActionResult> ObterResumoCarteira()
     {
+        var enderecoCarteira = _cryptoService.ObterCarteiraDoUsuario();
+
         if (string.IsNullOrWhiteSpace(enderecoCarteira))
-            return BadRequest("O endereço da carteira é obrigatório.");
+            return BadRequest("Endereço da carteira não definido. Use o POST para definir.");
 
         // Busca todos os tokens do usuário
         var tokens = await _cryptoService.ObterTokensMoralis(enderecoCarteira);
@@ -66,8 +75,19 @@ public class CryptoController : ControllerBase
 
         return Ok(resposta);
     }
-}
 
+
+    // POST api/crypto/carteira
+    [HttpPost("carteira")]
+    public IActionResult DefinirCarteira([FromBody] string carteira)
+    {
+        if (string.IsNullOrWhiteSpace(carteira))
+            return BadRequest("Carteira inválida.");
+
+        _cryptoService.DefinirCarteira(carteira);
+        return Ok(new { mensagem = "Carteira definida com sucesso!" });
+    }
+}
 
 
 

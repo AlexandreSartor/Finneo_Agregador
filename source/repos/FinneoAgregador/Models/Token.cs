@@ -11,4 +11,6 @@
     public decimal Mudanca24hUsd { get; set; }
     public decimal Mudanca24hBr { get; set; } // Novo
     public string Rede { get; set; }
+
+    public decimal ValoremCarteira { get; set; }  // total de todas as redes para esse símbolo
 }

@@ -1,24 +1,28 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Net.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ?? Adiciona controllers
+// Adiciona controllers
 builder.Services.AddControllers();
 
-// ?? Adiciona Swagger (opcional, mas útil para teste)
-builder.Services.AddEndpointsApiExplorer();
 
 
-// ?? Registra CryptoService com HttpClient injetado
-builder.Services.AddHttpClient<CryptoService>();
+// Registra HttpClient singleton
+builder.Services.AddSingleton<HttpClient>();
+
+// Registra CryptoService como singleton e injeta HttpClient
+builder.Services.AddSingleton<CryptoService>(sp =>
+{
+    var httpClient = sp.GetRequiredService<HttpClient>();
+    return new CryptoService(httpClient);
+});
 
 var app = builder.Build();
 
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
 
 app.MapControllers();
